@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Nova AI</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background: #0b0b0f;
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            height: 65px;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            background: #101014;
+            border-bottom: 1px solid #292932;
+        }
+
+        .logo {
+            font-size: 21px;
+            font-weight: bold;
+        }
+
+        .status {
+            margin-left: 12px;
+            color: #55e878;
+            font-size: 13px;
+        }
+
+        #chat {
+            flex: 1;
+            width: 100%;
+            max-width: 900px;
+            margin: auto;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+
+        .welcome {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .welcome h1 {
+            font-size: 34px;
+            margin: 0 0 10px;
+        }
+
+        .welcome p {
+            color: #777;
+        }
+
+        .message {
+            margin-bottom: 25px;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .label {
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #777;
+        }
+
+        .user .label {
+            color: #789cff;
+        }
+
+        .bot .label {
+            color: #987cff;
+        }
+
+        .input-area {
+            padding: 15px;
+            background: #101014;
+            border-top: 1px solid #292932;
+        }
+
+        form {
+            max-width: 900px;
+            margin: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            min-height: 52px;
+            max-height: 180px;
+            resize: none;
+            padding: 15px;
+            border-radius: 13px;
+            border: 1px solid #35353e;
+            outline: none;
+            background: #1a1a21;
+            color: white;
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            border-color: #7060ff;
+        }
+
+        button {
+            border: none;
+            border-radius: 12px;
+            background: #6d5dfc;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #send {
+            width: 80px;
+        }
+
+        button:hover {
+            background: #7c6cff;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 600px) {
+
+            #chat {
+                padding: 20px 12px;
+            }
+
+            .welcome h1 {
+                font-size: 27px;
+            }
+
+            #send {
+                width: 65px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <div class="logo">
+        Nova AI
+    </div>
+
+    <div class="status">
+        ● Online
+    </div>
+
+</header>
+
+
+<div id="chat">
+
+    <div
+        id="welcome"
+        class="welcome"
+    >
+
+        <h1>
+            How can I help?
+        </h1>
+
+        <p>
+            Ask Nova anything.
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="input-area">
+
+    <form id="chat-form">
+
+        <textarea
+            id="input"
+            placeholder="Message Nova..."
+            rows="1"
+        ></textarea>
+
+        <button
+            id="send"
+            type="submit"
+        >
+            Send
+        </button>
+
+    </form>
+
+</div>
+
+
+<script>
+
+let messages = [];
+
+
+const chat =
+    document.getElementById("chat");
+
+const input =
+    document.getElementById("input");
+
+const form =
+    document.getElementById("chat-form");
+
+const send =
+    document.getElementById("send");
+
+
+function addMessage(sender, text) {
+
+    const welcome =
+        document.getElementById("welcome");
+
+    if (welcome) {
+        welcome.style.display = "none";
+    }
+
+
+    const message =
+        document.createElement("div");
+
+    message.className =
+        "message " + sender;
+
+
+    const label =
+        document.createElement("div");
+
+    label.className = "label";
+
+    label.textContent =
+        sender === "user"
+            ? "YOU"
+            : "NOVA";
+
+
+    const content =
+        document.createElement("div");
+
+    content.textContent = text;
+
+
+    message.appendChild(label);
+
+    message.appendChild(content);
+
+    chat.appendChild(message);
+
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+
+    return message;
+}
+
+
+async function sendMessage() {
+
+    const text =
+        input.value.trim();
+
+
+    if (!text) {
+        return;
+    }
+
+
+    input.value = "";
+
+    send.disabled = true;
+
+
+    addMessage(
+        "user",
+        text
+    );
+
+
+    messages.push({
+        role: "user",
+        content: text
+    });
+
+
+    const thinking =
+        addMessage(
+            "bot",
+            "Thinking..."
+        );
+
+
+    try {
+
+        const response =
+            await fetch(
+                "/chat",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify({
+                            messages: messages
+                        })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        thinking.remove();
+
+
+        if (data.error) {
+
+            addMessage(
+                "bot",
+                "Error: " + data.error
+            );
+
+            return;
+        }
+
+
+        addMessage(
+            "bot",
+            data.reply
+        );
+
+
+        messages.push({
+            role: "assistant",
+            content: data.reply
+        });
+
+
+    } catch (error) {
+
+        thinking.remove();
+
+        addMessage(
+            "bot",
+            "Could not connect to Nova."
+        );
+
+    } finally {
+
+        send.disabled = false;
+
+        input.focus();
+
+    }
+
+}
+
+
+form.addEventListener(
+    "submit",
+    function(event) {
+
+        event.preventDefault();
+
+        sendMessage();
+
+    }
+);
+
+
+input.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            sendMessage();
+
+        }
+
+    }
+);
+
+
+input.addEventListener(
+    "input",
+    function() {
+
+        this.style.height = "52px";
+
+        this.style.height =
+            Math.min(
+                this.scrollHeight,
+                180
+            ) + "px";
+
+    }
+);
+
+</script>
+
+
+</body>
+
+</html>
